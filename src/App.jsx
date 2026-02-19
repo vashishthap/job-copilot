@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── STORAGE ───────────────────────────────────────────────────────────────
 const LS = {
   get: (k, d = null) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
 };
 
 // ─── CANDIDATE PROFILE ─────────────────────────────────────────────────────
@@ -207,13 +207,17 @@ function OutputBox({ text, ph, mh = 340 }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // SETUP SCREEN — collects Anthropic key + Adzuna App ID + Adzuna App Key
 // ═══════════════════════════════════════════════════════════════════════════
-function Setup({ existing, existingAzId, existingAzKey, onSave, isUpdate, onCancel }) {
+function Setup({ existing, existingAzId, existingAzKey, onSave, isUpdate, onCancel, storageErr }) {
   const [key,    setKey]    = useState(existing || "");
   const [azId,   setAzId]   = useState(existingAzId || "");
   const [azKey,  setAzKey]  = useState(existingAzKey || "");
   const [showKey, setShowKey] = useState(false);
   const [err,    setErr]    = useState("");
   const [ok,     setOk]     = useState(false);
+
+  // Sync Adzuna fields whenever parent passes updated stored values (e.g. Settings reopened)
+  useEffect(() => { setAzId(existingAzId || ""); }, [existingAzId]);
+  useEffect(() => { setAzKey(existingAzKey || ""); }, [existingAzKey]);
 
   const save = () => {
     const k = key.trim();
@@ -222,7 +226,10 @@ function Setup({ existing, existingAzId, existingAzKey, onSave, isUpdate, onCanc
     if (k.length < 40) { setErr("That key looks too short — make sure you copied all of it."); return; }
     setErr("");
     setOk(true);
-    setTimeout(() => onSave({ anthropic: k, azId: azId.trim(), azKey: azKey.trim() }), 500);
+    // Capture current values immediately to avoid stale closure in setTimeout
+    const aid = azId.trim();
+    const akey = azKey.trim();
+    setTimeout(() => onSave({ anthropic: k, azId: aid, azKey: akey }), 500);
   };
 
   const inputStyle = { width: "100%", padding: "11px 13px", background: "#F8FAFF", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none" };
@@ -280,10 +287,14 @@ function Setup({ existing, existingAzId, existingAzKey, onSave, isUpdate, onCanc
               <div>
                 <Lbl t="Adzuna App ID" />
                 <input type="text" value={azId} onChange={e => setAzId(e.target.value)} placeholder="e.g. a1b2c3d4" style={inputStyle} />
+                {existingAzId && !azId && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Previously saved — type to replace</div>}
+                {azId && <div style={{ fontSize: 11, color: "var(--green)", marginTop: 4 }}>✓ App ID entered</div>}
               </div>
               <div>
                 <Lbl t="Adzuna App Key" />
                 <input type="text" value={azKey} onChange={e => setAzKey(e.target.value)} placeholder="e.g. e5f6g7h8i9…" style={inputStyle} />
+                {existingAzKey && !azKey && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Previously saved — type to replace</div>}
+                {azKey && <div style={{ fontSize: 11, color: "var(--green)", marginTop: 4 }}>✓ App Key entered</div>}
               </div>
             </div>
             <div style={{ marginTop: 7, fontSize: 11, color: "var(--muted)" }}>
@@ -292,6 +303,7 @@ function Setup({ existing, existingAzId, existingAzKey, onSave, isUpdate, onCanc
           </div>
 
           {err && <div style={{ background: "var(--red-lt)", border: "1px solid #FCA5A5", borderRadius: 9, padding: "10px 13px", color: "var(--red)", fontSize: 13, marginBottom: 14 }}>⚠️ {err}</div>}
+          {storageErr && <div style={{ background: "var(--red-lt)", border: "1px solid #FCA5A5", borderRadius: 9, padding: "10px 13px", color: "var(--red)", fontSize: 13, marginBottom: 14 }}>⚠️ {storageErr}</div>}
           {ok  && <div style={{ background: "var(--green-lt)", border: "1px solid #6EE7B7", borderRadius: 9, padding: "10px 13px", color: "var(--green)", fontSize: 13, marginBottom: 14 }}>✓ Saved! Launching…</div>}
 
           <div style={{ display: "flex", gap: 10 }}>
@@ -320,10 +332,20 @@ export default function App() {
   const [tab,       setTab]       = useState("search");
   const [apps,      setApps]      = useState(() => LS.get("cpa", []));
 
+  const [settErr, setSettErr] = useState("");
+
   const saveKeys = ({ anthropic, azId, azKey }) => {
-    LS.set("cpk",   anthropic); setApiKey(anthropic);
-    LS.set("azid",  azId);      setAdzunaId(azId);
-    LS.set("azkey", azKey);     setAdzunaKey(azKey);
+    const ok1 = LS.set("cpk",   anthropic);
+    const ok2 = LS.set("azid",  azId);
+    const ok3 = LS.set("azkey", azKey);
+    if (!ok1 || !ok2 || !ok3) {
+      setSettErr("Failed to save keys — browser storage may be full. Try clearing site data and retrying.");
+      return;
+    }
+    setSettErr("");
+    setApiKey(anthropic);
+    setAdzunaId(azId);
+    setAdzunaKey(azKey);
     setReady(true); setShowSett(false);
   };
 
@@ -340,7 +362,7 @@ export default function App() {
   }, []);
 
   if (!ready || showSett) {
-    return <Setup existing={apiKey} existingAzId={adzunaId} existingAzKey={adzunaKey} onSave={saveKeys} isUpdate={showSett} onCancel={() => setShowSett(false)} />;
+    return <Setup existing={apiKey} existingAzId={adzunaId} existingAzKey={adzunaKey} onSave={saveKeys} isUpdate={showSett} onCancel={() => setShowSett(false)} storageErr={settErr} />;
   }
 
   const tabs = [
@@ -404,7 +426,7 @@ export default function App() {
 
       {/* CONTENT */}
       <div style={{ maxWidth: 1020, margin: "0 auto", padding: "28px 24px" }}>
-        {tab === "search"  && <SearchTab  adzunaId={adzunaId} adzunaKey={adzunaKey} onSave={addApp} />}
+        {tab === "search"  && <SearchTab  adzunaId={adzunaId} adzunaKey={adzunaKey} onSave={addApp} onOpenSettings={() => setShowSett(true)} />}
         {tab === "tailor"  && <TailorTab  apiKey={apiKey} />}
         {tab === "cover"   && <CoverTab   apiKey={apiKey} />}
         {tab === "tracker" && <TrackerTab apps={apps} onUpdate={updApps} />}
@@ -416,7 +438,7 @@ export default function App() {
 // ═══════════════════════════════════════════════════════════════════════════
 // FIND LIVE JOBS TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function SearchTab({ adzunaId, adzunaKey, onSave }) {
+function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
   const [query,   setQuery]   = useState("");
   const [jobs,    setJobs]    = useState([]);
   const [loading, setLoading] = useState(false);
@@ -460,7 +482,11 @@ function SearchTab({ adzunaId, adzunaKey, onSave }) {
             </div>
           ))}
         </div>
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>Adzuna is free forever for personal use — no subscription, no expiry.</div>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>Adzuna is free forever for personal use — no subscription, no expiry.</div>
+        <button onClick={onOpenSettings} className="btn-blue"
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 22px", borderRadius: 11, fontSize: 14, border: "none" }}>
+          <Ic n="cog" s={16} />Configure Adzuna Keys Now
+        </button>
       </div>
     </div>
   );
