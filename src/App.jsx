@@ -19,10 +19,12 @@ const HIGHLIGHTS = `EUR 2M savings | 40% efficiency gains | US Patent 11562313 |
 
 const QUICK_SEARCHES = [
   "Digital Transformation Director",
-  "Technology VP telecoms",
+  "Technology VP",
   "Programme Director cloud",
-  "Senior Sales Director technology",
-  "Consulting Director Big 4",
+  "Chief Technology Officer",
+  "Consulting Director",
+  "VP Sales technology",
+  "Head of Digital",
 ];
 
 const STATUSES = ["Saved", "Applied", "Interviewing", "Offer", "Rejected"];
@@ -35,15 +37,37 @@ const STATUS_STYLE = {
 };
 
 // ─── ADZUNA LIVE SEARCH ────────────────────────────────────────────────────
+// Location keywords to strip from "what" and route to Adzuna's "where" param
+const LOC_WORDS = new Set(["uk","london","manchester","birmingham","leeds","edinburgh","bristol","remote","hybrid","england","scotland","wales"]);
+
 async function searchAdzuna(appId, appKey, query) {
-  const q = encodeURIComponent(query);
-  const url = `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=8&what=${q}&salary_min=130000&sort_by=relevance&content-type=application/json`;
-  const r = await fetch(url);
-  if (!r.ok) {
-    if (r.status === 401 || r.status === 403) throw new Error("Adzuna keys rejected — check your App ID and App Key in Settings.");
-    throw new Error(`Adzuna error ${r.status}. Please try again.`);
-  }
-  const data = await r.json();
+  const words    = query.trim().split(/\s+/);
+  const locWords = words.filter(w => LOC_WORDS.has(w.toLowerCase()));
+  const kwWords  = words.filter(w => !LOC_WORDS.has(w.toLowerCase()));
+
+  const what  = encodeURIComponent((kwWords.length ? kwWords : words).join(" "));
+  const where = encodeURIComponent(locWords.length ? locWords.join(" ") : "uk");
+
+  const buildUrl = (salaryMin) => {
+    let u = `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=10&what=${what}&where=${where}&sort_by=relevance&content-type=application/json`;
+    if (salaryMin) u += `&salary_min=${salaryMin}`;
+    return u;
+  };
+
+  const doFetch = async (url) => {
+    const r = await fetch(url);
+    if (!r.ok) {
+      if (r.status === 401 || r.status === 403) throw new Error("Adzuna keys rejected — check your App ID and App Key in Settings.");
+      throw new Error(`Adzuna error ${r.status}. Please try again.`);
+    }
+    return r.json();
+  };
+
+  // Try with a broad salary floor first; fall back without if Adzuna returns nothing
+  // (many senior roles don't advertise salary and are silently excluded by the filter)
+  let data = await doFetch(buildUrl(80000));
+  if (!data.results?.length) data = await doFetch(buildUrl(null));
+
   return (data.results || []).map((j, i) => ({
     id: i,
     title:    j.title || "Role",
@@ -452,7 +476,7 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
     setLoading(true); setJobs([]); setErr("");
     try {
       const results = await searchAdzuna(adzunaId, adzunaKey, sq);
-      if (results.length === 0) throw new Error("No results — try broader terms like 'Director transformation' or 'Technology VP'.");
+      if (results.length === 0) throw new Error("No results found — try shorter or broader terms e.g. 'Transformation Director' or 'Technology VP'.");
       setJobs(results);
     } catch (e) { setErr(e.message); }
     setLoading(false);
