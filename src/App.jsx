@@ -18,13 +18,14 @@ Aricent/Capgemini – Product Manager (2006–2007): Established network enginee
 const HIGHLIGHTS = `EUR 2M savings | 40% efficiency gains | US Patent 11562313 | MVNO Nation Live 2025 Keynote Speaker | Lean Six Sigma Black Belt | 28 years global telecoms and technology leadership`;
 
 const QUICK_SEARCHES = [
-  "Digital Transformation Director",
-  "Technology VP",
-  "Programme Director cloud",
-  "Chief Technology Officer",
-  "Consulting Director",
-  "VP Sales technology",
-  "Head of Digital",
+  "Technology Director",
+  "Programme Director",
+  "Head of Transformation",
+  "Sales Director Technology",
+  "VP Technology",
+  "Digital Director",
+  "Head of Technology",
+  "Managing Director",
 ];
 
 const STATUSES = ["Saved", "Applied", "Interviewing", "Offer", "Rejected"];
@@ -79,6 +80,7 @@ async function searchAdzuna(appId, appKey, query) {
     type:     j.contract_time === "full_time" ? "Full-time"
               : j.contract_time === "part_time" ? "Part-time"
               : j.contract_type === "contract" ? "Contract" : "Permanent",
+    description: (j.description || "").replace(/<[^>]+>/g, "").trim(),
     summary:  (j.description || "").replace(/<[^>]+>/g, "").slice(0, 200).trim() + "…",
     url:      j.redirect_url || "",
   }));
@@ -133,7 +135,9 @@ function Ic({ n, s = 18 }) {
     copy:    <svg {...p}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
     eye:     <svg {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
     eyeoff:  <svg {...p}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
-    cog:     <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    cog:      <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    download: <svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    link:     <svg {...p}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
   };
   return icons[n] || null;
 }
@@ -172,6 +176,8 @@ function Styles() {
       .btn-blue { background: linear-gradient(135deg,#2563EB,#1D4ED8); color:#fff; border:none; font-family:inherit; font-weight:600; transition: box-shadow .18s, transform .15s; cursor:pointer; }
       .btn-blue:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(37,99,235,0.4); transform: translateY(-1px); }
       .btn-blue:disabled { opacity:0.5; cursor:not-allowed; }
+      .btn-green { background: linear-gradient(135deg,#059669,#047857); color:#fff; border:none; font-family:inherit; font-weight:600; transition: box-shadow .18s, transform .15s; cursor:pointer; }
+      .btn-green:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(5,150,105,0.4); transform: translateY(-1px); }
       .btn-outline { background:var(--surface); color:var(--text2); border:1.5px solid var(--border); font-family:inherit; transition:border-color .15s,background .15s; cursor:pointer; }
       .btn-outline:hover { border-color:var(--border2); background:var(--blue-lt); }
       .tab-btn { border:none; background:transparent; font-family:inherit; cursor:pointer; transition:color .15s; }
@@ -224,6 +230,65 @@ function OutputBox({ text, ph, mh = 340 }) {
   return (
     <div style={{ minHeight: mh, maxHeight: 520, padding: "15px 17px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text2)", fontSize: 13, lineHeight: 1.9, whiteSpace: "pre-wrap", overflowY: "auto" }}>
       {text || <span style={{ color: "var(--faint)" }}>{ph}</span>}
+    </div>
+  );
+}
+
+// ─── DOWNLOAD HELPERS ──────────────────────────────────────────────────────
+function downloadAsDoc(text, filename) {
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lines = text.split("\n").map(l => `<p style="margin:0 0 6pt;font-family:Calibri,Arial;font-size:11pt;">${esc(l) || "&nbsp;"}</p>`).join("");
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"/></head><body style="margin:72pt 60pt;">${lines}</body></html>`;
+  const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename + ".doc";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function downloadAsPDF(text, title) {
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lines = text.split("\n").map(l => `<p style="margin:0 0 8px;">${esc(l) || "&nbsp;"}</p>`).join("");
+  const html = `<!DOCTYPE html><html><head><title>${esc(title)}</title><style>
+    @media print { @page { margin: 25mm 20mm; } }
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.6; padding: 32px; max-width: 740px; margin: 0 auto; color: #111; }
+    h2 { font-size: 14pt; margin-bottom: 18px; color: #1E40AF; border-bottom: 1px solid #DBEAFE; padding-bottom: 8px; }
+  </style></head><body><h2>${esc(title)}</h2>${lines}
+  <script>window.onload=function(){ setTimeout(function(){ window.print(); }, 400); }<\/script>
+  </body></html>`;
+  const blob = new Blob([html], { type: "text/html" });
+  const url  = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+}
+
+// ─── DOWNLOAD ACTION BAR ────────────────────────────────────────────────────
+function DownloadBar({ text, docFilename, pdfTitle, applyUrl, onCoverLetter }) {
+  if (!text) return null;
+  return (
+    <div style={{ marginTop: 14, padding: "14px 16px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, display: "flex", gap: 9, flexWrap: "wrap", alignItems: "center", boxShadow: "var(--shadow)" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", marginRight: 2 }}>Save as:</span>
+      <button onClick={() => downloadAsDoc(text, docFilename)} className="btn-outline"
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+        <Ic n="download" s={13} /> .doc (Word)
+      </button>
+      <button onClick={() => downloadAsPDF(text, pdfTitle)} className="btn-outline"
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+        <Ic n="download" s={13} /> PDF
+      </button>
+      <CopyBtn text={text} />
+      {applyUrl && (
+        <a href={applyUrl} target="_blank" rel="noreferrer"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "var(--green-lt)", color: "var(--green)", border: "1.5px solid #A7F3D0", textDecoration: "none", marginLeft: "auto" }}>
+          <Ic n="link" s={13} /> Apply Now ↗
+        </a>
+      )}
+      {onCoverLetter && (
+        <button onClick={onCoverLetter} className="btn-green"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 12 }}>
+          <Ic n="mail" s={13} /> Cover Letter →
+        </button>
+      )}
     </div>
   );
 }
@@ -352,9 +417,10 @@ export default function App() {
   const [adzunaId,  setAdzunaId]  = useState(() => LS.get("azid",  ""));
   const [adzunaKey, setAdzunaKey] = useState(() => LS.get("azkey", ""));
   const [ready,     setReady]     = useState(() => !!LS.get("cpk", ""));
-  const [showSett,  setShowSett]  = useState(false);
-  const [tab,       setTab]       = useState("search");
-  const [apps,      setApps]      = useState(() => LS.get("cpa", []));
+  const [showSett,     setShowSett]     = useState(false);
+  const [tab,          setTab]          = useState("search");
+  const [apps,         setApps]         = useState(() => LS.get("cpa", []));
+  const [coverPrefill, setCoverPrefill] = useState(null);
 
   const [settErr, setSettErr] = useState("");
 
@@ -383,6 +449,11 @@ export default function App() {
       return next;
     });
     setTab("tracker");
+  }, []);
+
+  const openCoverWithJob = useCallback(job => {
+    setCoverPrefill({ jd: job.description || "", company: job.company || "", role: job.title || "", url: job.url || "" });
+    setTab("cover");
   }, []);
 
   if (!ready || showSett) {
@@ -451,8 +522,8 @@ export default function App() {
       {/* CONTENT */}
       <div style={{ maxWidth: 1020, margin: "0 auto", padding: "28px 24px" }}>
         {tab === "search"  && <SearchTab  adzunaId={adzunaId} adzunaKey={adzunaKey} onSave={addApp} onOpenSettings={() => setShowSett(true)} />}
-        {tab === "tailor"  && <TailorTab  apiKey={apiKey} />}
-        {tab === "cover"   && <CoverTab   apiKey={apiKey} />}
+        {tab === "tailor"  && <TailorTab  apiKey={apiKey} apps={apps} onOpenCover={openCoverWithJob} />}
+        {tab === "cover"   && <CoverTab   apiKey={apiKey} prefill={coverPrefill} />}
         {tab === "tracker" && <TrackerTab apps={apps} onUpdate={updApps} />}
       </div>
     </div>
@@ -588,11 +659,20 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // TAILOR CV TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function TailorTab({ apiKey }) {
-  const [jd,   setJd]   = useState("");
-  const [out,  setOut]  = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err,  setErr]  = useState("");
+function TailorTab({ apiKey, apps, onOpenCover }) {
+  const [jd,          setJd]          = useState("");
+  const [out,         setOut]         = useState("");
+  const [busy,        setBusy]        = useState(false);
+  const [err,         setErr]         = useState("");
+  const [selectedJob, setSelectedJob] = useState(null);
+
+  const jobsWithDesc = apps.filter(a => a.description && a.description.length > 20);
+
+  const loadJob = (app) => {
+    setSelectedJob(app);
+    setJd(app.description || "");
+    setOut(""); setErr("");
+  };
 
   const run = async () => {
     if (!jd.trim()) return;
@@ -621,22 +701,48 @@ KEYWORDS TO ADD
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Tailor Your CV</h2>
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>Paste a job description — get a tailored summary, the best bullets to lead with, and keywords to add.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>Paste a job description or load a saved job — get a tailored summary, best bullets, and keywords.</p>
       </div>
+
+      {jobsWithDesc.length > 0 && (
+        <div style={{ marginBottom: 18, padding: "14px 16px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12 }}>
+          <Lbl t={`Load from saved jobs (${jobsWithDesc.length} available)`} />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {jobsWithDesc.map(app => (
+              <button key={app.id} onClick={() => loadJob(app)} className={selectedJob?.id === app.id ? "btn-blue" : "btn-outline"}
+                style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                {app.title} · {app.company}
+              </button>
+            ))}
+          </div>
+          {selectedJob && (
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
+              ✓ {selectedJob.title} @ {selectedJob.company}
+              {selectedJob.url && <> · <a href={selectedJob.url} target="_blank" rel="noreferrer">View posting ↗</a></>}
+            </div>
+          )}
+        </div>
+      )}
+
       <Err msg={err} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div>
           <Lbl t="Job Description" />
-          <textarea value={jd} onChange={e => setJd(e.target.value)} placeholder="Paste the full job description here…"
+          <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); }}
+            placeholder="Paste the full job description here, or load a saved job above…"
             style={{ width: "100%", minHeight: 340, padding: "13px 15px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 13, lineHeight: 1.7, outline: "none", boxShadow: "var(--shadow)" }} />
           <BigBtn label="Tailor My CV" icon="file" onClick={run} loading={busy} disabled={!jd.trim()} />
         </div>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-            <Lbl t="Tailored Output" />
-            {out && <CopyBtn text={out} />}
-          </div>
+          <Lbl t="Tailored Output" />
           <OutputBox text={out} ph="Your tailored CV content will appear here…" />
+          <DownloadBar
+            text={out}
+            docFilename={selectedJob ? `CV-Tailored-${selectedJob.company}` : "CV-Tailored"}
+            pdfTitle={selectedJob ? `Tailored CV — ${selectedJob.title} @ ${selectedJob.company}` : "Tailored CV"}
+            applyUrl={selectedJob?.url}
+            onCoverLetter={selectedJob && out ? () => onOpenCover(selectedJob) : null}
+          />
         </div>
       </div>
     </div>
@@ -646,14 +752,25 @@ KEYWORDS TO ADD
 // ═══════════════════════════════════════════════════════════════════════════
 // COVER LETTER TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function CoverTab({ apiKey }) {
-  const [jd,   setJd]   = useState("");
-  const [co,   setCo]   = useState("");
-  const [ro,   setRo]   = useState("");
-  const [tone, setTone] = useState("Confident & direct");
-  const [out,  setOut]  = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err,  setErr]  = useState("");
+function CoverTab({ apiKey, prefill }) {
+  const [jd,       setJd]       = useState("");
+  const [co,       setCo]       = useState("");
+  const [ro,       setRo]       = useState("");
+  const [applyUrl, setApplyUrl] = useState("");
+  const [tone,     setTone]     = useState("Confident & direct");
+  const [out,      setOut]      = useState("");
+  const [busy,     setBusy]     = useState(false);
+  const [err,      setErr]      = useState("");
+
+  useEffect(() => {
+    if (prefill) {
+      setJd(prefill.jd      || "");
+      setCo(prefill.company || "");
+      setRo(prefill.role    || "");
+      setApplyUrl(prefill.url || "");
+      setOut("");
+    }
+  }, [prefill]);
 
   const run = async () => {
     if (!jd.trim()) return;
@@ -681,7 +798,10 @@ function CoverTab({ apiKey }) {
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Cover Letter Generator</h2>
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>Bespoke senior executive cover letter — ready to copy in seconds.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>
+          Bespoke senior executive cover letter — ready to download in seconds.
+          {prefill?.company && <span style={{ color: "var(--green)", fontWeight: 600 }}> ✓ Pre-filled from {prefill.company}</span>}
+        </p>
       </div>
       <Err msg={err} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
@@ -709,11 +829,14 @@ function CoverTab({ apiKey }) {
           <BigBtn label="Generate Cover Letter" icon="mail" onClick={run} loading={busy} disabled={!jd.trim()} />
         </div>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-            <Lbl t="Cover Letter" />
-            {out && <CopyBtn text={out} />}
-          </div>
+          <Lbl t="Cover Letter" />
           <OutputBox text={out} ph="Your cover letter will appear here…" mh={440} />
+          <DownloadBar
+            text={out}
+            docFilename={co ? `Cover-Letter-${co}` : "Cover-Letter"}
+            pdfTitle={co && ro ? `Cover Letter — ${ro} @ ${co}` : "Cover Letter"}
+            applyUrl={applyUrl}
+          />
         </div>
       </div>
     </div>
@@ -826,6 +949,7 @@ function TrackerTab({ apps, onUpdate }) {
                       style={{ padding: "3px 9px", borderRadius: 20, fontSize: 11, background: st.bg, color: st.color, border: "none", fontWeight: 700, outline: "none", cursor: "pointer" }}>
                       {STATUSES.map(s => <option key={s}>{s}</option>)}
                     </select>
+                    {app.url && <a href={app.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--blue)", fontWeight: 600, textDecoration: "none" }}>Apply ↗</a>}
                   </div>
                   {editId === app.id ? (
                     <div style={{ marginTop: 10 }}>
