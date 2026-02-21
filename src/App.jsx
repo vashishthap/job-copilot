@@ -236,22 +236,27 @@ function OutputBox({ text, ph, mh = 340 }) {
 }
 
 // ─── DOWNLOAD HELPERS ──────────────────────────────────────────────────────
+function cleanSpecialChars(s) {
+  return s
+    .replace(/[\u2018\u2019]/g, "'")   // smart single quotes → straight
+    .replace(/[\u201C\u201D]/g, '"')   // smart double quotes → straight
+    .replace(/\u2013/g, "-")           // en dash → hyphen
+    .replace(/\u2014/g, "-")           // em dash → hyphen
+    .replace(/\u2026/g, "...")         // ellipsis → three dots
+    .replace(/\u00A0/g, " ");          // non-breaking space → regular
+}
+
 function downloadAsDoc(text, filename) {
-  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = s => cleanSpecialChars(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = text.split("\n").map(l => {
     const t = l.trim();
     if (!t) return `<p style="margin:0 0 4pt;">&nbsp;</p>`;
-    // Separator line (━ characters)
     if (/^━+$/.test(t)) return `<p style="margin:2pt 0;border-bottom:1pt solid #2563EB;">&nbsp;</p>`;
-    // Name line (first non-empty line — large and bold)
     if (t === "PRASHANT VASHISHTHA") return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:18pt;font-weight:bold;color:#1E40AF;">${esc(t)}</p>`;
-    // All-caps section headers
     if (t === t.toUpperCase() && t.length > 3 && !/^[━\-•]/.test(t) && !/←/.test(t))
       return `<p style="margin:8pt 0 3pt;font-family:Calibri,Arial;font-size:11pt;font-weight:bold;color:#1E40AF;letter-spacing:.04em;">${esc(t)}</p>`;
-    // Bullet lines
     if (t.startsWith("- ") || t.startsWith("• "))
       return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:11pt;padding-left:14pt;">${esc(t)}</p>`;
-    // Role lines (contain | for dates — bold)
     if (t.includes(" | ") && !t.includes("@"))
       return `<p style="margin:6pt 0 2pt;font-family:Calibri,Arial;font-size:11pt;font-weight:bold;">${esc(t)}</p>`;
     return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:11pt;">${esc(t)}</p>`;
@@ -265,7 +270,7 @@ function downloadAsDoc(text, filename) {
 }
 
 function downloadAsPDF(text, title) {
-  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = s => cleanSpecialChars(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = text.split("\n").map(l => {
     const t = l.trim();
     if (!t) return `<p class="gap">&nbsp;</p>`;
@@ -752,76 +757,111 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // TAILOR CV TAB
 // ═══════════════════════════════════════════════════════════════════════════
-const CV_SYSTEM = `You are a senior executive CV writer. Generate a COMPLETE, ready-to-use tailored CV for this candidate.
+const CV_SYSTEM = `You are a senior executive CV writer. Produce TWO clearly separated outputs for this candidate.
 
-STRICT RULES — follow without exception:
-- Use ONLY facts, roles, and metrics explicitly stated in the candidate data
-- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
-- If a job requirement has no honest match, omit it — never fabricate one
-- Mirror the job description's language naturally where it genuinely fits
-- Tone: confident, senior, direct — zero waffle or buzzwords
+OUTPUT 1 — TAILORING NOTES (shown separately to the user, never downloaded):
+Start with exactly: ===TAILORING_NOTES===
+Write concise guidance under these headings:
+• Transferable skills mapped: List 3-4 skills from the candidate's telecoms/technology background that directly transfer to this specific role, with a brief explanation of how each maps across.
+• Key areas to emphasise: What to foreground for this role.
+• Keywords to weave in: 6-8 keywords from the JD (comma-separated).
+• Honest gap check: Any genuine gap to be aware of (or "No significant gaps").
 
-Output a complete CV using exactly this format and these section headings:
+OUTPUT 2 — COMPLETE TAILORED CV (clean, ready to download):
+Start with exactly: ===TAILORED_CV===
+Generate a COMPLETE, ready-to-use CV using exactly this format:
 
 PRASHANT VASHISHTHA
-[Your email] | [Your phone] | [Your LinkedIn] | London, UK (open to relocation)
+London, UK | Availability: Negotiable
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROFESSIONAL SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Three confident sentences tailored to this specific role. No buzzwords.
+Three confident sentences tailored to this specific role. Mirror the role's language. No buzzwords.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CORE COMPETENCIES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-8–10 genuine competency areas that match this role. Use pipe-separated pairs on each line.
+8-10 genuine competency areas from the candidate's background that match this role. Pipe-separated pairs per line.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROFESSIONAL EXPERIENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For EVERY role in the candidate data, write:
-COMPANY – TITLE | DATES
-- Bullet using only stated facts and metrics, reframed in this role's language
+For EVERY role in the candidate data:
+COMPANY - TITLE | DATES
+- Bullet using only stated facts and metrics, reframed to emphasise transferable relevance to this role
 - Bullet
-[Most recent 2 roles: 3 bullets each. Earlier roles: 1–2 bullets.]
+[Most recent 2 roles: 3 bullets each. Earlier roles: 1-2 bullets.]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 KEY ACHIEVEMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Use only the highlights provided. Present as concise, punchy bullets.
+Use only the highlights provided. Concise, punchy bullets.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TAILORING NOTE  ← remove before submitting
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1–2 honest sentences: which role/achievement to lead with, and any genuine gap to flag.`;
+STRICT RULES for the CV — non-negotiable:
+- Use ONLY facts, roles, and metrics explicitly stated in the candidate data
+- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
+- Emphasise TRANSFERABLE SKILLS throughout — show how telecoms/technology leadership applies to this role
+- Mirror the job description's language naturally where it genuinely fits
+- Tone: confident, senior, direct — zero waffle or buzzwords
+- Output nothing outside the two === sections`;
 
 function TailorTab({ apiKey, apps, onOpenCover }) {
-  const [jd,          setJd]          = useState("");
-  const [out,         setOut]         = useState("");
-  const [busy,        setBusy]        = useState(false);
-  const [err,         setErr]         = useState("");
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [feedback,    setFeedback]    = useState("");
-  const [showRefine,  setShowRefine]  = useState(false);
+  const [jd,             setJd]             = useState("");
+  const [cvOut,          setCvOut]          = useState("");
+  const [notesOut,       setNotesOut]       = useState("");
+  const [busy,           setBusy]           = useState(false);
+  const [fetchingJD,     setFetchingJD]     = useState(false);
+  const [err,            setErr]            = useState("");
+  const [selectedJob,    setSelectedJob]    = useState(null);
+  const [feedback,       setFeedback]       = useState("");
+  const [showRefine,     setShowRefine]     = useState(false);
 
   const jobsWithDesc = apps.filter(a => a.description && a.description.length > 20);
 
   const loadJob = (app) => {
     setSelectedJob(app);
     setJd(app.description || "");
-    setOut(""); setErr(""); setFeedback(""); setShowRefine(false);
+    setCvOut(""); setNotesOut(""); setErr(""); setFeedback(""); setShowRefine(false);
+  };
+
+  const fetchFullJD = async () => {
+    if (!selectedJob?.url) return;
+    setFetchingJD(true);
+    try {
+      const proxy = `https://corsproxy.io/?${encodeURIComponent(selectedJob.url)}`;
+      const r = await fetch(proxy);
+      const html = await r.text();
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      div.querySelectorAll("script,style,nav,header,footer,aside").forEach(el => el.remove());
+      const raw = (div.innerText || div.textContent || "").replace(/\s+/g, " ").trim();
+      if (raw.length > 300) setJd(raw.slice(0, 4000));
+    } catch (_) { /* silently fall back — user can paste manually */ }
+    setFetchingJD(false);
+  };
+
+  const parseOutput = (raw) => {
+    const notesMatch = raw.match(/===TAILORING_NOTES===([\s\S]*?)(?====TAILORED_CV===|$)/);
+    const cvMatch    = raw.match(/===TAILORED_CV===([\s\S]*)$/);
+    return {
+      notes: notesMatch ? notesMatch[1].trim() : "",
+      cv:    cvMatch    ? cvMatch[1].trim()    : raw.trim(),
+    };
   };
 
   const run = async (refineMode = false) => {
     if (!jd.trim()) return;
     setBusy(true); setErr("");
-    if (!refineMode) { setOut(""); setFeedback(""); setShowRefine(false); }
+    if (!refineMode) { setCvOut(""); setNotesOut(""); setFeedback(""); setShowRefine(false); }
     const userMsg = refineMode
-      ? `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}\n\n---\nPREVIOUS CV DRAFT:\n${out}\n\n---\nUSER REFINEMENT REQUEST:\n${feedback}\n\nRevise the complete CV incorporating this feedback. Keep all sections not mentioned unchanged.`
+      ? `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}\n\n---\nPREVIOUS CV DRAFT:\n${cvOut}\n\n---\nUSER REFINEMENT REQUEST:\n${feedback}\n\nRevise the complete CV incorporating this feedback. Output both sections (===TAILORING_NOTES=== and ===TAILORED_CV===) again.`
       : `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}`;
     try {
-      const r = await askClaude(apiKey, CV_SYSTEM, userMsg, 2200);
-      setOut(r);
+      const raw = await askClaude(apiKey, CV_SYSTEM, userMsg, 2400);
+      const { notes, cv } = parseOutput(raw);
+      setNotesOut(notes);
+      setCvOut(cv);
       if (refineMode) { setFeedback(""); setShowRefine(false); }
     } catch (e) { setErr(e.message); }
     setBusy(false);
@@ -831,7 +871,7 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Tailor Your CV</h2>
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>Generates a complete, download-ready CV tailored to the role — using only your real experience. Paste a job description or load a saved job.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>Generates a complete, download-ready CV tailored to the role — with a separate tailoring notes panel for guidance. Uses only your real experience.</p>
       </div>
 
       {jobsWithDesc.length > 0 && (
@@ -846,9 +886,15 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
             ))}
           </div>
           {selectedJob && (
-            <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-              ✓ {selectedJob.title} @ {selectedJob.company}
-              {selectedJob.url && <> · <a href={selectedJob.url} target="_blank" rel="noreferrer">View posting ↗</a></>}
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <span>✓ {selectedJob.title} @ {selectedJob.company}</span>
+              {selectedJob.url && <a href={selectedJob.url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>View posting ↗</a>}
+              {selectedJob.url && (
+                <button onClick={fetchFullJD} disabled={fetchingJD} className="btn-outline"
+                  style={{ padding: "3px 11px", borderRadius: 8, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                  {fetchingJD ? "Fetching…" : "Fetch Full JD ↓"}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -856,15 +902,17 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
 
       <Err msg={err} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* Left — Job description input */}
+
+        {/* Left — Job description input + refine */}
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <Lbl t="Job Description" />
-          <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); setOut(""); setShowRefine(false); }}
-            placeholder="Paste the full job description here, or load a saved job above…"
+          <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); setCvOut(""); setNotesOut(""); setShowRefine(false); }}
+            placeholder="Paste the full job description here, or load a saved job above. More detail = better tailoring."
             style={{ width: "100%", minHeight: 360, padding: "13px 15px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 13, lineHeight: 1.7, outline: "none", boxShadow: "var(--shadow)" }} />
           <BigBtn label="Generate Full Tailored CV" icon="file" onClick={() => run(false)} loading={busy && !showRefine} disabled={!jd.trim()} />
-          {/* Refine panel — shows after CV is generated */}
-          {out && (
+
+          {/* Refine panel */}
+          {cvOut && (
             <div style={{ marginTop: 14, padding: "14px 16px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, boxShadow: "var(--shadow)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <Lbl t="Refine with feedback" />
@@ -874,44 +922,57 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
               </div>
               {showRefine && (
                 <>
-                  <textarea
-                    value={feedback}
-                    onChange={e => setFeedback(e.target.value)}
+                  <textarea value={feedback} onChange={e => setFeedback(e.target.value)}
                     placeholder={'e.g. "Emphasise the sales experience more" · "Shorter summary" · "Lead with the 5G programme work"'}
-                    style={{ width: "100%", minHeight: 80, padding: "10px 13px", background: "var(--bg)", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.6, outline: "none", resize: "vertical" }}
-                  />
+                    style={{ width: "100%", minHeight: 80, padding: "10px 13px", background: "var(--bg)", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.6, outline: "none", resize: "vertical" }} />
                   <button onClick={() => run(true)} disabled={!feedback.trim() || busy} className="btn-outline"
                     style={{ marginTop: 9, width: "100%", padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
                     {busy ? <><div style={{ width: 14, height: 14, border: "2px solid var(--border)", borderTopColor: "var(--blue)", borderRadius: "50%", animation: "spin .8s linear infinite" }} />Refining…</> : <>↺ Regenerate with feedback</>}
                   </button>
                 </>
               )}
-              {!showRefine && (
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Not quite right? Add notes and regenerate in seconds.</div>
-              )}
+              {!showRefine && <div style={{ fontSize: 12, color: "var(--muted)" }}>Not quite right? Add notes and regenerate in seconds.</div>}
             </div>
           )}
         </div>
 
-        {/* Right — CV output */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-            <Lbl t="Complete Tailored CV" />
-            {out && <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>✓ Ready to download</span>}
-          </div>
-          {!out && !busy && (
-            <div style={{ marginBottom: 10, padding: "11px 14px", background: "var(--amber-lt)", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
-              <strong>What you'll get:</strong> A complete, structured CV — summary, competencies, full experience section, key achievements — tailored to the role and ready to download as Word or PDF.
+        {/* Right — Tailoring Notes + Clean CV */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Tailoring Notes panel */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", letterSpacing: ".09em", textTransform: "uppercase" }}>Tailoring Notes</div>
+              <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 500 }}>— transferable skills, keywords & guidance</span>
             </div>
-          )}
-          <OutputBox text={out} ph="Your complete tailored CV will appear here — ready to download and send." mh={420} />
-          <DownloadBar
-            text={out}
-            docFilename={selectedJob ? `CV-${selectedJob.company.replace(/\s+/g,"-")}` : "CV-Tailored"}
-            pdfTitle={selectedJob ? `Tailored CV — ${selectedJob.title} @ ${selectedJob.company}` : "Tailored CV"}
-            applyUrl={selectedJob?.url}
-            onCoverLetter={selectedJob && out ? () => onOpenCover(selectedJob) : null}
-          />
+            {!notesOut && !busy && (
+              <div style={{ padding: "11px 14px", background: "var(--amber-lt)", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
+                <strong>What you'll get here:</strong> Transferable skills mapped to this role, key emphasis areas, keywords to weave in, and an honest gap check — separate from the CV itself.
+              </div>
+            )}
+            {notesOut && (
+              <div style={{ padding: "14px 16px", background: "var(--amber-lt)", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 13, color: "#78350F", lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 240, overflowY: "auto" }}>
+                {notesOut}
+              </div>
+            )}
+          </div>
+
+          {/* Tailored CV panel */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+              <Lbl t="Complete Tailored CV" />
+              {cvOut && <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>✓ Ready to download</span>}
+            </div>
+            <OutputBox text={cvOut} ph="Your complete tailored CV will appear here — ready to download as Word or PDF." mh={300} />
+            <DownloadBar
+              text={cvOut}
+              docFilename={selectedJob ? `CV-${selectedJob.company.replace(/\s+/g,"-")}` : "CV-Tailored"}
+              pdfTitle={selectedJob ? `Tailored CV — ${selectedJob.title} @ ${selectedJob.company}` : "Tailored CV"}
+              applyUrl={selectedJob?.url}
+              onCoverLetter={selectedJob && cvOut ? () => onOpenCover(selectedJob) : null}
+            />
+          </div>
+
         </div>
       </div>
     </div>
