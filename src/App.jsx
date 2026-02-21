@@ -71,18 +71,19 @@ async function searchAdzuna(appId, appKey, query) {
 
   return (data.results || []).map((j, i) => ({
     id: i,
-    title:    j.title || "Role",
-    company:  j.company?.display_name || "Company",
-    location: j.location?.display_name || "UK",
-    salary:   j.salary_min && j.salary_max
-                ? `£${Math.round(j.salary_min / 1000)}k – £${Math.round(j.salary_max / 1000)}k`
-                : j.salary_min ? `£${Math.round(j.salary_min / 1000)}k+` : "Salary not listed",
-    type:     j.contract_time === "full_time" ? "Full-time"
-              : j.contract_time === "part_time" ? "Part-time"
-              : j.contract_type === "contract" ? "Contract" : "Permanent",
+    title:     j.title || "Role",
+    company:   j.company?.display_name || "Company",
+    location:  j.location?.display_name || "UK",
+    salaryRaw: j.salary_min || 0,
+    salary:    j.salary_min && j.salary_max
+                 ? `£${Math.round(j.salary_min / 1000)}k – £${Math.round(j.salary_max / 1000)}k`
+                 : j.salary_min ? `£${Math.round(j.salary_min / 1000)}k+` : "Salary not listed",
+    type:      j.contract_time === "full_time" ? "Full-time"
+               : j.contract_time === "part_time" ? "Part-time"
+               : j.contract_type === "contract" ? "Contract" : "Permanent",
     description: (j.description || "").replace(/<[^>]+>/g, "").trim(),
-    summary:  (j.description || "").replace(/<[^>]+>/g, "").slice(0, 200).trim() + "…",
-    url:      j.redirect_url || "",
+    summary:   (j.description || "").replace(/<[^>]+>/g, "").slice(0, 220).trim() + "…",
+    url:       j.redirect_url || "",
   }));
 }
 
@@ -228,7 +229,7 @@ function BigBtn({ label, icon, onClick, loading, disabled }) {
 
 function OutputBox({ text, ph, mh = 340 }) {
   return (
-    <div style={{ minHeight: mh, maxHeight: 520, padding: "15px 17px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text2)", fontSize: 13, lineHeight: 1.9, whiteSpace: "pre-wrap", overflowY: "auto" }}>
+    <div style={{ minHeight: mh, maxHeight: 640, padding: "15px 17px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text2)", fontSize: 13, lineHeight: 1.85, whiteSpace: "pre-wrap", overflowY: "auto" }}>
       {text || <span style={{ color: "var(--faint)" }}>{ph}</span>}
     </div>
   );
@@ -237,8 +238,25 @@ function OutputBox({ text, ph, mh = 340 }) {
 // ─── DOWNLOAD HELPERS ──────────────────────────────────────────────────────
 function downloadAsDoc(text, filename) {
   const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const lines = text.split("\n").map(l => `<p style="margin:0 0 6pt;font-family:Calibri,Arial;font-size:11pt;">${esc(l) || "&nbsp;"}</p>`).join("");
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"/></head><body style="margin:72pt 60pt;">${lines}</body></html>`;
+  const lines = text.split("\n").map(l => {
+    const t = l.trim();
+    if (!t) return `<p style="margin:0 0 4pt;">&nbsp;</p>`;
+    // Separator line (━ characters)
+    if (/^━+$/.test(t)) return `<p style="margin:2pt 0;border-bottom:1pt solid #2563EB;">&nbsp;</p>`;
+    // Name line (first non-empty line — large and bold)
+    if (t === "PRASHANT VASHISHTHA") return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:18pt;font-weight:bold;color:#1E40AF;">${esc(t)}</p>`;
+    // All-caps section headers
+    if (t === t.toUpperCase() && t.length > 3 && !/^[━\-•]/.test(t) && !/←/.test(t))
+      return `<p style="margin:8pt 0 3pt;font-family:Calibri,Arial;font-size:11pt;font-weight:bold;color:#1E40AF;letter-spacing:.04em;">${esc(t)}</p>`;
+    // Bullet lines
+    if (t.startsWith("- ") || t.startsWith("• "))
+      return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:11pt;padding-left:14pt;">${esc(t)}</p>`;
+    // Role lines (contain | for dates — bold)
+    if (t.includes(" | ") && !t.includes("@"))
+      return `<p style="margin:6pt 0 2pt;font-family:Calibri,Arial;font-size:11pt;font-weight:bold;">${esc(t)}</p>`;
+    return `<p style="margin:0 0 4pt;font-family:Calibri,Arial;font-size:11pt;">${esc(t)}</p>`;
+  }).join("");
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"/></head><body style="margin:64pt 60pt;">${lines}</body></html>`;
   const blob = new Blob(["\ufeff", html], { type: "application/msword" });
   const url  = URL.createObjectURL(blob);
   const a = document.createElement("a"); a.href = url; a.download = filename + ".doc";
@@ -248,12 +266,28 @@ function downloadAsDoc(text, filename) {
 
 function downloadAsPDF(text, title) {
   const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const lines = text.split("\n").map(l => `<p style="margin:0 0 8px;">${esc(l) || "&nbsp;"}</p>`).join("");
+  const lines = text.split("\n").map(l => {
+    const t = l.trim();
+    if (!t) return `<p class="gap">&nbsp;</p>`;
+    if (/^━+$/.test(t)) return `<hr class="sep"/>`;
+    if (t === "PRASHANT VASHISHTHA") return `<p class="name">${esc(t)}</p>`;
+    if (t === t.toUpperCase() && t.length > 3 && !/^[━\-•]/.test(t) && !/←/.test(t)) return `<p class="hdr">${esc(t)}</p>`;
+    if (t.startsWith("- ") || t.startsWith("• ")) return `<p class="bul">${esc(t)}</p>`;
+    if (t.includes(" | ") && !t.includes("@")) return `<p class="role">${esc(t)}</p>`;
+    return `<p class="txt">${esc(t)}</p>`;
+  }).join("");
   const html = `<!DOCTYPE html><html><head><title>${esc(title)}</title><style>
-    @media print { @page { margin: 25mm 20mm; } }
-    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.6; padding: 32px; max-width: 740px; margin: 0 auto; color: #111; }
-    h2 { font-size: 14pt; margin-bottom: 18px; color: #1E40AF; border-bottom: 1px solid #DBEAFE; padding-bottom: 8px; }
-  </style></head><body><h2>${esc(title)}</h2>${lines}
+    @media print { @page { margin: 20mm 18mm; } }
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.55; padding: 28px; max-width: 720px; margin: 0 auto; color: #111; }
+    p { margin: 0; }
+    .name { font-size: 20pt; font-weight: 700; color: #1E40AF; margin-bottom: 4px; }
+    .hdr  { font-size: 10pt; font-weight: 700; color: #1E40AF; letter-spacing: .06em; margin: 10px 0 2px; }
+    .role { font-weight: 700; margin: 6px 0 2px; }
+    .bul  { padding-left: 14px; margin-bottom: 3px; }
+    .txt  { margin-bottom: 3px; }
+    .gap  { margin-bottom: 4px; }
+    .sep  { border: none; border-top: 1px solid #2563EB; margin: 2px 0; }
+  </style></head><body>${lines}
   <script>window.onload=function(){ setTimeout(function(){ window.print(); }, 400); }<\/script>
   </body></html>`;
   const blob = new Blob([html], { type: "text/html" });
@@ -534,17 +568,26 @@ export default function App() {
 // FIND LIVE JOBS TAB
 // ═══════════════════════════════════════════════════════════════════════════
 function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
-  const [query,   setQuery]   = useState("");
-  const [jobs,    setJobs]    = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saved,   setSaved]   = useState({});
-  const [err,     setErr]     = useState("");
+  const [query,    setQuery]    = useState("");
+  const [jobs,     setJobs]     = useState([]);
+  const [loading,  setLoading]  = useState(false);
+  const [saved,    setSaved]    = useState({});
+  const [err,      setErr]      = useState("");
+  const [sortBy,   setSortBy]   = useState("relevance");
+  const [workType, setWorkType] = useState("All");
   const hasKeys = adzunaId && adzunaKey;
+
+  const detectWorkType = (job) => {
+    const text = (job.title + " " + job.location + " " + (job.description || "")).toLowerCase();
+    if (text.includes("remote")) return "Remote";
+    if (text.includes("hybrid")) return "Hybrid";
+    return "On-site";
+  };
 
   const search = async (q) => {
     const sq = (q || query).trim();
     if (!sq || !hasKeys) return;
-    setLoading(true); setJobs([]); setErr("");
+    setLoading(true); setJobs([]); setErr(""); setWorkType("All"); setSortBy("relevance");
     try {
       const results = await searchAdzuna(adzunaId, adzunaKey, sq);
       if (results.length === 0) throw new Error("No results found — try shorter or broader terms e.g. 'Transformation Director' or 'Technology VP'.");
@@ -552,6 +595,11 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
     } catch (e) { setErr(e.message); }
     setLoading(false);
   };
+
+  let displayed = [...jobs];
+  if (workType !== "All") displayed = displayed.filter(j => detectWorkType(j) === workType);
+  if (sortBy === "salary_desc") displayed.sort((a, b) => b.salaryRaw - a.salaryRaw);
+  if (sortBy === "salary_asc")  displayed.sort((a, b) => a.salaryRaw - b.salaryRaw);
 
   // No Adzuna keys yet — show setup prompt
   if (!hasKeys) return (
@@ -606,7 +654,8 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 26 }}>
+      {/* Quick search chips */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 16 }}>
         {QUICK_SEARCHES.map(q => (
           <button key={q} onClick={() => { setQuery(q); search(q); }} className="chip"
             style={{ padding: "5px 13px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 20, color: "var(--text2)", fontSize: 12, fontWeight: 500, boxShadow: "var(--shadow)", transition: "all .15s" }}>
@@ -615,17 +664,61 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
         ))}
       </div>
 
+      {/* Filter & sort bar — only show when results exist */}
+      {jobs.length > 0 && (
+        <div style={{ marginBottom: 20, padding: "12px 16px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", boxShadow: "var(--shadow)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>Work type</span>
+            <div style={{ display: "flex", gap: 5 }}>
+              {["All", "Remote", "Hybrid", "On-site"].map(t => (
+                <button key={t} onClick={() => setWorkType(t)}
+                  style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", background: workType === t ? "var(--blue)" : "var(--bg)", color: workType === t ? "#fff" : "var(--muted)", border: `1.5px solid ${workType === t ? "var(--blue)" : "var(--border)"}`, transition: "all .15s" }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".07em" }}>Sort by</span>
+            <div style={{ display: "flex", gap: 5 }}>
+              {[["relevance","Relevance"],["salary_desc","Salary ↓"],["salary_asc","Salary ↑"]].map(([v, label]) => (
+                <button key={v} onClick={() => setSortBy(v)}
+                  style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", background: sortBy === v ? "var(--blue)" : "var(--bg)", color: sortBy === v ? "#fff" : "var(--muted)", border: `1.5px solid ${sortBy === v ? "var(--blue)" : "var(--border)"}`, transition: "all .15s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--faint)" }}>
+            {displayed.length} of {jobs.length} shown
+          </span>
+        </div>
+      )}
+
       <Err msg={err} />
       {loading && <Spin msg="Searching live job market…" />}
 
+      {jobs.length > 0 && displayed.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--faint)", fontSize: 13 }}>
+          No {workType} roles in these results — try a different work type filter.
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {jobs.map(job => (
-          <div key={job.id} className="card-hover"
+        {displayed.map(job => {
+          const wt = detectWorkType(job);
+          return <div key={job.id} className="card-hover"
             style={{ background: "#fff", border: "1.5px solid var(--border)", borderRadius: 16, padding: "20px 22px", display: "flex", gap: 16, justifyContent: "space-between", animation: "fadeUp .25s ease", boxShadow: "var(--shadow)" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 7, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, flexWrap: "wrap" }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{job.title}</h3>
                 <span style={{ padding: "2px 9px", background: "var(--blue-lt)", color: "var(--blue)", borderRadius: 20, fontSize: 11, fontWeight: 700, border: "1px solid var(--border)", whiteSpace: "nowrap" }}>{job.type}</span>
+                <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+                  background: wt === "Remote" ? "#F0FDF4" : wt === "Hybrid" ? "#FFFBEB" : "#F8FAFF",
+                  color:      wt === "Remote" ? "#15803D"  : wt === "Hybrid" ? "#B45309"  : "#475569",
+                  border:     wt === "Remote" ? "1px solid #BBF7D0" : wt === "Hybrid" ? "1px solid #FDE68A" : "1px solid var(--border)" }}>
+                  {wt}
+                </span>
               </div>
               <div style={{ display: "flex", gap: 14, marginBottom: 9, flexWrap: "wrap" }}>
                 <span style={{ color: "var(--text2)", fontSize: 13, fontWeight: 700 }}>{job.company}</span>
@@ -634,7 +727,7 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
               </div>
               <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.65 }}>{job.summary}</p>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 90 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 96 }}>
               <button onClick={() => { onSave(job); setSaved(s => ({ ...s, [job.id]: true })); }}
                 className={saved[job.id] ? "" : "btn-blue"}
                 style={saved[job.id]
@@ -650,7 +743,7 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
               )}
             </div>
           </div>
-        ))}
+        })}
       </div>
     </div>
   );
@@ -659,53 +752,77 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // TAILOR CV TAB
 // ═══════════════════════════════════════════════════════════════════════════
+const CV_SYSTEM = `You are a senior executive CV writer. Generate a COMPLETE, ready-to-use tailored CV for this candidate.
+
+STRICT RULES — follow without exception:
+- Use ONLY facts, roles, and metrics explicitly stated in the candidate data
+- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
+- If a job requirement has no honest match, omit it — never fabricate one
+- Mirror the job description's language naturally where it genuinely fits
+- Tone: confident, senior, direct — zero waffle or buzzwords
+
+Output a complete CV using exactly this format and these section headings:
+
+PRASHANT VASHISHTHA
+[Your email] | [Your phone] | [Your LinkedIn] | London, UK (open to relocation)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFESSIONAL SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Three confident sentences tailored to this specific role. No buzzwords.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CORE COMPETENCIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8–10 genuine competency areas that match this role. Use pipe-separated pairs on each line.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFESSIONAL EXPERIENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+For EVERY role in the candidate data, write:
+COMPANY – TITLE | DATES
+- Bullet using only stated facts and metrics, reframed in this role's language
+- Bullet
+[Most recent 2 roles: 3 bullets each. Earlier roles: 1–2 bullets.]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY ACHIEVEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Use only the highlights provided. Present as concise, punchy bullets.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TAILORING NOTE  ← remove before submitting
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1–2 honest sentences: which role/achievement to lead with, and any genuine gap to flag.`;
+
 function TailorTab({ apiKey, apps, onOpenCover }) {
   const [jd,          setJd]          = useState("");
   const [out,         setOut]         = useState("");
   const [busy,        setBusy]        = useState(false);
   const [err,         setErr]         = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
+  const [feedback,    setFeedback]    = useState("");
+  const [showRefine,  setShowRefine]  = useState(false);
 
   const jobsWithDesc = apps.filter(a => a.description && a.description.length > 20);
 
   const loadJob = (app) => {
     setSelectedJob(app);
     setJd(app.description || "");
-    setOut(""); setErr("");
+    setOut(""); setErr(""); setFeedback(""); setShowRefine(false);
   };
 
-  const run = async () => {
+  const run = async (refineMode = false) => {
     if (!jd.trim()) return;
-    setBusy(true); setOut(""); setErr("");
+    setBusy(true); setErr("");
+    if (!refineMode) { setOut(""); setFeedback(""); setShowRefine(false); }
+    const userMsg = refineMode
+      ? `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}\n\n---\nPREVIOUS CV DRAFT:\n${out}\n\n---\nUSER REFINEMENT REQUEST:\n${feedback}\n\nRevise the complete CV incorporating this feedback. Keep all sections not mentioned unchanged.`
+      : `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}`;
     try {
-      const r = await askClaude(apiKey,
-        `You are a senior executive CV writer. Tailor the candidate's CV content for a specific role.
-
-STRICT RULES — follow these without exception:
-- Use ONLY facts, roles, and metrics explicitly stated in the candidate data below
-- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
-- Do NOT add experience the candidate has not claimed
-- Mirror the job description's language naturally where it genuinely fits
-- If a requirement in the job description has no match in the candidate's background, skip it — do not invent one
-- Keep tone confident, senior, and direct — no corporate waffle or buzzwords
-
-Output exactly these four sections with these exact headings:
-
-PROFESSIONAL SUMMARY
-Three sentences ready to paste at the top of the CV. Grounded in the candidate's actual background. Uses language from the job description where it genuinely fits. No fluff.
-
-STRONGEST MATCHING BULLETS
-The 4 experience bullets from the candidate's background that best match this role. Reframe each using the job's language where natural — but keep only the metrics and facts already stated. Start each with a dash.
-
-KEYWORDS TO WEAVE IN
-6–8 specific terms and phrases from the job description that match the candidate's genuine background. Comma separated. Only include keywords the candidate can honestly claim.
-
-TAILORING NOTE
-One or two sentences of honest advice: which role or achievement to lead with, and any genuine gap to be aware of.`,
-        `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}`,
-        1300
-      );
+      const r = await askClaude(apiKey, CV_SYSTEM, userMsg, 2200);
       setOut(r);
+      if (refineMode) { setFeedback(""); setShowRefine(false); }
     } catch (e) { setErr(e.message); }
     setBusy(false);
   };
@@ -714,7 +831,7 @@ One or two sentences of honest advice: which role or achievement to lead with, a
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Tailor Your CV</h2>
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>Paste a job description or load a saved job — get a ready-to-use summary, your strongest matching bullets, keywords, and an honest tailoring note. Only uses your real experience.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>Generates a complete, download-ready CV tailored to the role — using only your real experience. Paste a job description or load a saved job.</p>
       </div>
 
       {jobsWithDesc.length > 0 && (
@@ -739,24 +856,58 @@ One or two sentences of honest advice: which role or achievement to lead with, a
 
       <Err msg={err} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div>
+        {/* Left — Job description input */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <Lbl t="Job Description" />
-          <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); }}
+          <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); setOut(""); setShowRefine(false); }}
             placeholder="Paste the full job description here, or load a saved job above…"
-            style={{ width: "100%", minHeight: 340, padding: "13px 15px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 13, lineHeight: 1.7, outline: "none", boxShadow: "var(--shadow)" }} />
-          <BigBtn label="Tailor My CV" icon="file" onClick={run} loading={busy} disabled={!jd.trim()} />
-        </div>
-        <div>
-          <Lbl t="Tailored Output" />
-          {!out && !busy && (
-            <div style={{ marginBottom: 10, padding: "10px 14px", background: "var(--amber-lt)", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 12, color: "#92400E", lineHeight: 1.65 }}>
-              <strong>How to use:</strong> Copy the <em>Professional Summary</em> to the top of your CV. Swap in the <em>Strongest Bullets</em> for your most relevant roles. Sprinkle <em>Keywords</em> naturally into your existing text.
+            style={{ width: "100%", minHeight: 360, padding: "13px 15px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 13, lineHeight: 1.7, outline: "none", boxShadow: "var(--shadow)" }} />
+          <BigBtn label="Generate Full Tailored CV" icon="file" onClick={() => run(false)} loading={busy && !showRefine} disabled={!jd.trim()} />
+          {/* Refine panel — shows after CV is generated */}
+          {out && (
+            <div style={{ marginTop: 14, padding: "14px 16px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, boxShadow: "var(--shadow)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <Lbl t="Refine with feedback" />
+                <button onClick={() => setShowRefine(s => !s)} style={{ fontSize: 11, color: "var(--blue)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                  {showRefine ? "▲ hide" : "▼ show"}
+                </button>
+              </div>
+              {showRefine && (
+                <>
+                  <textarea
+                    value={feedback}
+                    onChange={e => setFeedback(e.target.value)}
+                    placeholder={'e.g. "Emphasise the sales experience more" · "Shorter summary" · "Lead with the 5G programme work"'}
+                    style={{ width: "100%", minHeight: 80, padding: "10px 13px", background: "var(--bg)", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.6, outline: "none", resize: "vertical" }}
+                  />
+                  <button onClick={() => run(true)} disabled={!feedback.trim() || busy} className="btn-outline"
+                    style={{ marginTop: 9, width: "100%", padding: "9px 0", borderRadius: 10, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                    {busy ? <><div style={{ width: 14, height: 14, border: "2px solid var(--border)", borderTopColor: "var(--blue)", borderRadius: "50%", animation: "spin .8s linear infinite" }} />Refining…</> : <>↺ Regenerate with feedback</>}
+                  </button>
+                </>
+              )}
+              {!showRefine && (
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Not quite right? Add notes and regenerate in seconds.</div>
+              )}
             </div>
           )}
-          <OutputBox text={out} ph="Your tailored summary, bullets, keywords and tailoring note will appear here…" />
+        </div>
+
+        {/* Right — CV output */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+            <Lbl t="Complete Tailored CV" />
+            {out && <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>✓ Ready to download</span>}
+          </div>
+          {!out && !busy && (
+            <div style={{ marginBottom: 10, padding: "11px 14px", background: "var(--amber-lt)", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
+              <strong>What you'll get:</strong> A complete, structured CV — summary, competencies, full experience section, key achievements — tailored to the role and ready to download as Word or PDF.
+            </div>
+          )}
+          <OutputBox text={out} ph="Your complete tailored CV will appear here — ready to download and send." mh={420} />
           <DownloadBar
             text={out}
-            docFilename={selectedJob ? `CV-Tailored-${selectedJob.company}` : "CV-Tailored"}
+            docFilename={selectedJob ? `CV-${selectedJob.company.replace(/\s+/g,"-")}` : "CV-Tailored"}
             pdfTitle={selectedJob ? `Tailored CV — ${selectedJob.title} @ ${selectedJob.company}` : "Tailored CV"}
             applyUrl={selectedJob?.url}
             onCoverLetter={selectedJob && out ? () => onOpenCover(selectedJob) : null}
