@@ -139,6 +139,7 @@ function Ic({ n, s = 18 }) {
     cog:      <svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
     download: <svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
     link:     <svg {...p}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+    linkedin: <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>,
   };
   return icons[n] || null;
 }
@@ -660,13 +661,28 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
       </div>
 
       {/* Quick search chips */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
         {QUICK_SEARCHES.map(q => (
           <button key={q} onClick={() => { setQuery(q); search(q); }} className="chip"
             style={{ padding: "5px 13px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 20, color: "var(--text2)", fontSize: 12, fontWeight: 500, boxShadow: "var(--shadow)", transition: "all .15s" }}>
             {q}
           </button>
         ))}
+      </div>
+
+      {/* LinkedIn quick-search bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, padding: "10px 14px", background: "#EEF3FF", border: "1.5px solid #C7D7F8", borderRadius: 11 }}>
+        <Ic n="linkedin" s={15} />
+        <span style={{ fontSize: 12, color: "var(--text2)", flex: 1 }}>
+          Also search on <strong>LinkedIn Jobs</strong> — opens in a new tab with the same query.
+        </span>
+        <a
+          href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query || "Technology Director")}&location=United+Kingdom&sortBy=R`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#0A66C2", color: "#fff", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+          <Ic n="linkedin" s={13} /> Search LinkedIn ↗
+        </a>
       </div>
 
       {/* Filter & sort bar — only show when results exist */}
