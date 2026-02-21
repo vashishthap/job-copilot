@@ -679,18 +679,31 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
     setBusy(true); setOut(""); setErr("");
     try {
       const r = await askClaude(apiKey,
-        `You are an expert executive CV writer. Given a job description and candidate background, write three sections:
+        `You are a senior executive CV writer. Tailor the candidate's CV content for a specific role.
 
-TAILORED SUMMARY
-Three sentences. Confident, no buzzwords. Mirror the role's key language naturally.
+STRICT RULES — follow these without exception:
+- Use ONLY facts, roles, and metrics explicitly stated in the candidate data below
+- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
+- Do NOT add experience the candidate has not claimed
+- Mirror the job description's language naturally where it genuinely fits
+- If a requirement in the job description has no match in the candidate's background, skip it — do not invent one
+- Keep tone confident, senior, and direct — no corporate waffle or buzzwords
 
-LEAD WITH THESE BULLETS
-Exactly 4 bullets from the candidate's experience most relevant to this role. Start each with a dash. Include the metric.
+Output exactly these four sections with these exact headings:
 
-KEYWORDS TO ADD
-6 to 8 keywords from the job description to add to the CV, comma separated.`,
-        `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nHIGHLIGHTS: ${HIGHLIGHTS}`,
-        900
+PROFESSIONAL SUMMARY
+Three sentences ready to paste at the top of the CV. Grounded in the candidate's actual background. Uses language from the job description where it genuinely fits. No fluff.
+
+STRONGEST MATCHING BULLETS
+The 4 experience bullets from the candidate's background that best match this role. Reframe each using the job's language where natural — but keep only the metrics and facts already stated. Start each with a dash.
+
+KEYWORDS TO WEAVE IN
+6–8 specific terms and phrases from the job description that match the candidate's genuine background. Comma separated. Only include keywords the candidate can honestly claim.
+
+TAILORING NOTE
+One or two sentences of honest advice: which role or achievement to lead with, and any genuine gap to be aware of.`,
+        `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}`,
+        1300
       );
       setOut(r);
     } catch (e) { setErr(e.message); }
@@ -701,7 +714,7 @@ KEYWORDS TO ADD
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Tailor Your CV</h2>
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>Paste a job description or load a saved job — get a tailored summary, best bullets, and keywords.</p>
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>Paste a job description or load a saved job — get a ready-to-use summary, your strongest matching bullets, keywords, and an honest tailoring note. Only uses your real experience.</p>
       </div>
 
       {jobsWithDesc.length > 0 && (
@@ -735,7 +748,12 @@ KEYWORDS TO ADD
         </div>
         <div>
           <Lbl t="Tailored Output" />
-          <OutputBox text={out} ph="Your tailored CV content will appear here…" />
+          {!out && !busy && (
+            <div style={{ marginBottom: 10, padding: "10px 14px", background: "var(--amber-lt)", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 12, color: "#92400E", lineHeight: 1.65 }}>
+              <strong>How to use:</strong> Copy the <em>Professional Summary</em> to the top of your CV. Swap in the <em>Strongest Bullets</em> for your most relevant roles. Sprinkle <em>Keywords</em> naturally into your existing text.
+            </div>
+          )}
+          <OutputBox text={out} ph="Your tailored summary, bullets, keywords and tailoring note will appear here…" />
           <DownloadBar
             text={out}
             docFilename={selectedJob ? `CV-Tailored-${selectedJob.company}` : "CV-Tailored"}
