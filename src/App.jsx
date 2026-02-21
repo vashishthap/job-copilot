@@ -88,7 +88,7 @@ async function searchAdzuna(appId, appKey, query) {
 }
 
 // ─── CLAUDE API (text only, for CV/cover letter) ──────────────────────────
-async function askClaude(apiKey, system, user, tokens = 1200) {
+async function askClaude(apiKey, system, user, tokens = 1200, model = "claude-haiku-4-5-20251001") {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -98,7 +98,7 @@ async function askClaude(apiKey, system, user, tokens = 1200) {
       "anthropic-dangerous-direct-browser-access": "true",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model,
       max_tokens: tokens,
       system,
       messages: [{ role: "user", content: user }],
@@ -562,7 +562,7 @@ export default function App() {
       <div style={{ maxWidth: 1020, margin: "0 auto", padding: "28px 24px" }}>
         {tab === "search"  && <SearchTab  adzunaId={adzunaId} adzunaKey={adzunaKey} onSave={addApp} onOpenSettings={() => setShowSett(true)} />}
         {tab === "tailor"  && <TailorTab  apiKey={apiKey} apps={apps} onOpenCover={openCoverWithJob} />}
-        {tab === "cover"   && <CoverTab   apiKey={apiKey} prefill={coverPrefill} />}
+        {tab === "cover"   && <CoverTab   apiKey={apiKey} prefill={coverPrefill} apps={apps} />}
         {tab === "tracker" && <TrackerTab apps={apps} onUpdate={updApps} />}
       </div>
     </div>
@@ -759,17 +759,17 @@ function SearchTab({ adzunaId, adzunaKey, onSave, onOpenSettings }) {
 // ═══════════════════════════════════════════════════════════════════════════
 const CV_SYSTEM = `You are a senior executive CV writer. Produce TWO clearly separated outputs for this candidate.
 
-OUTPUT 1 — TAILORING NOTES (shown separately to the user, never downloaded):
+OUTPUT 1 — TAILORING NOTES (shown separately, never downloaded):
 Start with exactly: ===TAILORING_NOTES===
-Write concise guidance under these headings:
-• Transferable skills mapped: List 3-4 skills from the candidate's telecoms/technology background that directly transfer to this specific role, with a brief explanation of how each maps across.
-• Key areas to emphasise: What to foreground for this role.
-• Keywords to weave in: 6-8 keywords from the JD (comma-separated).
-• Honest gap check: Any genuine gap to be aware of (or "No significant gaps").
+Concise guidance under these four headings (plain text, no extra formatting):
+Transferable skills mapped: 3-4 skills from the candidate's telecoms/technology background that directly transfer to this role, with a one-line explanation of how each maps across.
+Key areas to emphasise: What to foreground for this specific role.
+Keywords to weave in: 6-8 keywords from the JD, comma-separated.
+Honest gap check: Any genuine gap to flag, or "No significant gaps identified."
 
 OUTPUT 2 — COMPLETE TAILORED CV (clean, ready to download):
 Start with exactly: ===TAILORED_CV===
-Generate a COMPLETE, ready-to-use CV using exactly this format:
+Use exactly this structure:
 
 PRASHANT VASHISHTHA
 London, UK | Availability: Negotiable
@@ -777,34 +777,34 @@ London, UK | Availability: Negotiable
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROFESSIONAL SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Three confident sentences tailored to this specific role. Mirror the role's language. No buzzwords.
+[Three sentences. Use only facts from the candidate data. Mirror the role's language naturally.]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CORE COMPETENCIES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-8-10 genuine competency areas from the candidate's background that match this role. Pipe-separated pairs per line.
+[8-10 competency areas drawn from the candidate's actual experience. Pipe-separated pairs per line.]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROFESSIONAL EXPERIENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For EVERY role in the candidate data:
+[Every role from the candidate data, in this format:]
 COMPANY - TITLE | DATES
-- Bullet using only stated facts and metrics, reframed to emphasise transferable relevance to this role
-- Bullet
-[Most recent 2 roles: 3 bullets each. Earlier roles: 1-2 bullets.]
+- [Bullet reframed to show transferable relevance — metrics and facts from candidate data only]
+[2-3 bullets for the 2 most recent roles; 1-2 for earlier roles]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 KEY ACHIEVEMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Use only the highlights provided. Concise, punchy bullets.
+[Bullets drawn only from the KEY ACHIEVEMENTS data provided. Do not add others.]
 
-STRICT RULES for the CV — non-negotiable:
-- Use ONLY facts, roles, and metrics explicitly stated in the candidate data
-- Do NOT invent, fabricate, or exaggerate any achievement, metric, technology, or skill
-- Emphasise TRANSFERABLE SKILLS throughout — show how telecoms/technology leadership applies to this role
-- Mirror the job description's language naturally where it genuinely fits
-- Tone: confident, senior, direct — zero waffle or buzzwords
-- Output nothing outside the two === sections`;
+════════ ABSOLUTE RULES — any violation makes the CV unusable ════════
+1. COPY metrics exactly as given. "10% YoY" stays "10% YoY" — never "double-digit" or "significant".
+2. Do NOT add any figure, percentage, client name, technology, tool, certification, or achievement that is not explicitly stated in the candidate data.
+3. Do NOT upgrade titles, extend date ranges, or imply responsibilities not described.
+4. Do NOT use phrases like "led a team of X", "managed £Xm budget", or any number not in the data.
+5. If a role requirement has no honest match in the data, describe the candidate's closest real experience without inventing specifics.
+6. Transferable-skills framing is encouraged — reframe real experience to show relevance — but never fabricate.
+7. Output nothing outside the two === delimited sections.`;
 
 function TailorTab({ apiKey, apps, onOpenCover }) {
   const [jd,             setJd]             = useState("");
@@ -858,7 +858,7 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
       ? `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}\n\n---\nPREVIOUS CV DRAFT:\n${cvOut}\n\n---\nUSER REFINEMENT REQUEST:\n${feedback}\n\nRevise the complete CV incorporating this feedback. Output both sections (===TAILORING_NOTES=== and ===TAILORED_CV===) again.`
       : `JOB DESCRIPTION:\n${jd}\n\nCANDIDATE EXPERIENCE:\n${EXP}\n\nKEY ACHIEVEMENTS: ${HIGHLIGHTS}`;
     try {
-      const raw = await askClaude(apiKey, CV_SYSTEM, userMsg, 2400);
+      const raw = await askClaude(apiKey, CV_SYSTEM, userMsg, 2400, "claude-sonnet-4-5-20250929");
       const { notes, cv } = parseOutput(raw);
       setNotesOut(notes);
       setCvOut(cv);
@@ -982,41 +982,68 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // COVER LETTER TAB
 // ═══════════════════════════════════════════════════════════════════════════
-function CoverTab({ apiKey, prefill }) {
-  const [jd,       setJd]       = useState("");
-  const [co,       setCo]       = useState("");
-  const [ro,       setRo]       = useState("");
-  const [applyUrl, setApplyUrl] = useState("");
-  const [tone,     setTone]     = useState("Confident & direct");
-  const [out,      setOut]      = useState("");
-  const [busy,     setBusy]     = useState(false);
-  const [err,      setErr]      = useState("");
+function CoverTab({ apiKey, prefill, apps }) {
+  const [jd,          setJd]          = useState("");
+  const [co,          setCo]          = useState("");
+  const [ro,          setRo]          = useState("");
+  const [applyUrl,    setApplyUrl]    = useState("");
+  const [tone,        setTone]        = useState("Confident & direct");
+  const [out,         setOut]         = useState("");
+  const [busy,        setBusy]        = useState(false);
+  const [err,         setErr]         = useState("");
+  const [selectedJob, setSelectedJob] = useState(null);
 
+  const jobsWithDesc = (apps || []).filter(a => a.description && a.description.length > 20);
+
+  // Pre-fill from "Cover Letter →" button in TailorTab
   useEffect(() => {
     if (prefill) {
       setJd(prefill.jd      || "");
       setCo(prefill.company || "");
       setRo(prefill.role    || "");
       setApplyUrl(prefill.url || "");
+      setSelectedJob(null);
       setOut("");
     }
   }, [prefill]);
+
+  const loadJob = (app) => {
+    setSelectedJob(app);
+    setJd(app.description || "");
+    setCo(app.company     || "");
+    setRo(app.title       || "");
+    setApplyUrl(app.url   || "");
+    setOut(""); setErr("");
+  };
 
   const run = async () => {
     if (!jd.trim()) return;
     setBusy(true); setOut(""); setErr("");
     try {
       const r = await askClaude(apiKey,
-        `You write concise cover letters for senior executives. Rules:
+        `You write concise cover letters for senior executives.
+Rules:
 - Maximum 300 words
 - Tone: ${tone}
-- Open with a specific hook about the company or role
-- Reference 2 specific quantified achievements naturally
-- Close confidently, mention availability is negotiable
+- Open with a specific hook about the company or role — based only on the JD provided
+- Reference exactly 2 quantified achievements from KEY WINS below — copy the figures exactly, do not round or embellish
+- Close confidently; mention availability is negotiable
 - Address as "Dear Hiring Team"
-- No salary mention
-- No corporate waffle — write as a real senior executive`,
-        `ROLE: ${ro || "Senior Executive"} at ${co || "your organisation"}\nJOB DESCRIPTION:\n${jd}\n\nCANDIDATE: Prashant Vashishtha | Notice: Negotiable\nKEY WINS: EUR 2M savings at Nokia | 40% efficiency gains | US Patent 11562313 | MVNO Nation Keynote 2025 | 28 years global telecoms leadership | 10% YoY revenue growth current role`,
+- No salary mention; no corporate waffle
+- Do NOT invent any achievement, figure, client, or detail not listed in KEY WINS`,
+        `ROLE: ${ro || "Senior Executive"} at ${co || "the organisation"}
+JOB DESCRIPTION:
+${jd}
+
+CANDIDATE: Prashant Vashishtha | Notice: Negotiable
+KEY WINS (use only these, copy figures exactly):
+- EUR 2M annualised savings delivered at Nokia
+- 40% efficiency gains through process transformation and RPA
+- US Patent 11562313 for services process automation
+- MVNO Nation Live 2025 Keynote Speaker
+- 28 years global telecoms and technology leadership
+- 10% YoY revenue growth in current Customer Technology Lead role
+- 25% efficiency gain, 40% client engagement increase (current role)`,
         900
       );
       setOut(r);
@@ -1024,21 +1051,45 @@ function CoverTab({ apiKey, prefill }) {
     setBusy(false);
   };
 
+  const inputStyle = { width: "100%", padding: "10px 13px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none" };
+
   return (
     <div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 6, letterSpacing: "-.4px" }}>Cover Letter Generator</h2>
         <p style={{ color: "var(--muted)", fontSize: 13 }}>
           Bespoke senior executive cover letter — ready to download in seconds.
-          {prefill?.company && <span style={{ color: "var(--green)", fontWeight: 600 }}> ✓ Pre-filled from {prefill.company}</span>}
+          {(prefill?.company || selectedJob) && <span style={{ color: "var(--green)", fontWeight: 600 }}> ✓ Pre-filled from {selectedJob?.company || prefill?.company}</span>}
         </p>
       </div>
+
+      {/* Saved jobs loader */}
+      {jobsWithDesc.length > 0 && (
+        <div style={{ marginBottom: 18, padding: "14px 16px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12 }}>
+          <Lbl t={`Load from saved jobs (${jobsWithDesc.length} available)`} />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {jobsWithDesc.map(app => (
+              <button key={app.id} onClick={() => loadJob(app)} className={selectedJob?.id === app.id ? "btn-blue" : "btn-outline"}
+                style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                {app.title} · {app.company}
+              </button>
+            ))}
+          </div>
+          {selectedJob && (
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
+              ✓ {selectedJob.title} @ {selectedJob.company}
+              {selectedJob.url && <> · <a href={selectedJob.url} target="_blank" rel="noreferrer">View posting ↗</a></>}
+            </div>
+          )}
+        </div>
+      )}
+
       <Err msg={err} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div><Lbl t="Company" /><input value={co} onChange={e => setCo(e.target.value)} placeholder="e.g. Deloitte" style={{ width: "100%", padding: "10px 13px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none" }} /></div>
-            <div><Lbl t="Role Title" /><input value={ro} onChange={e => setRo(e.target.value)} placeholder="e.g. Director" style={{ width: "100%", padding: "10px 13px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 10, color: "var(--text)", fontSize: 13, outline: "none" }} /></div>
+            <div><Lbl t="Company" /><input value={co} onChange={e => setCo(e.target.value)} placeholder="e.g. Deloitte" style={inputStyle} /></div>
+            <div><Lbl t="Role Title" /><input value={ro} onChange={e => setRo(e.target.value)} placeholder="e.g. Director" style={inputStyle} /></div>
           </div>
           <div>
             <Lbl t="Tone" />
@@ -1053,7 +1104,7 @@ function CoverTab({ apiKey, prefill }) {
           </div>
           <div>
             <Lbl t="Job Description" />
-            <textarea value={jd} onChange={e => setJd(e.target.value)} placeholder="Paste job description here…"
+            <textarea value={jd} onChange={e => { setJd(e.target.value); setSelectedJob(null); }} placeholder="Paste job description here, or load a saved job above…"
               style={{ width: "100%", minHeight: 230, padding: "13px 15px", background: "#fff", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text)", fontSize: 13, lineHeight: 1.7, outline: "none" }} />
           </div>
           <BigBtn label="Generate Cover Letter" icon="mail" onClick={run} loading={busy} disabled={!jd.trim()} />
