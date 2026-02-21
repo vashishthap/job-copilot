@@ -228,7 +228,18 @@ function BigBtn({ label, icon, onClick, loading, disabled }) {
   );
 }
 
-function OutputBox({ text, ph, mh = 340 }) {
+function OutputBox({ text, ph, mh = 340, onChange }) {
+  if (onChange) {
+    return (
+      <textarea
+        value={text}
+        onChange={e => onChange(e.target.value)}
+        placeholder={ph}
+        spellCheck
+        style={{ display: "block", width: "100%", boxSizing: "border-box", minHeight: mh, maxHeight: 640, padding: "15px 17px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text2)", fontSize: 13, lineHeight: 1.85, whiteSpace: "pre-wrap", overflowY: "auto", resize: "vertical", fontFamily: "inherit", outline: "none" }}
+      />
+    );
+  }
   return (
     <div style={{ minHeight: mh, maxHeight: 640, padding: "15px 17px", background: "var(--blue-lt)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--text2)", fontSize: 13, lineHeight: 1.85, whiteSpace: "pre-wrap", overflowY: "auto" }}>
       {text || <span style={{ color: "var(--faint)" }}>{ph}</span>}
@@ -979,7 +990,7 @@ function TailorTab({ apiKey, apps, onOpenCover }) {
               <Lbl t="Complete Tailored CV" />
               {cvOut && <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>✓ Ready to download</span>}
             </div>
-            <OutputBox text={cvOut} ph="Your complete tailored CV will appear here — ready to download as Word or PDF." mh={300} />
+            <OutputBox text={cvOut} ph="Your complete tailored CV will appear here — ready to download as Word or PDF." mh={300} onChange={setCvOut} />
             <DownloadBar
               text={cvOut}
               docFilename={selectedJob ? `CV-${selectedJob.company.replace(/\s+/g,"-")}` : "CV-Tailored"}
@@ -1127,7 +1138,7 @@ KEY WINS (use only these, copy figures exactly):
         </div>
         <div>
           <Lbl t="Cover Letter" />
-          <OutputBox text={out} ph="Your cover letter will appear here…" mh={440} />
+          <OutputBox text={out} ph="Your cover letter will appear here…" mh={440} onChange={setOut} />
           <DownloadBar
             text={out}
             docFilename={co ? `Cover-Letter-${co}` : "Cover-Letter"}
